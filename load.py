@@ -3,24 +3,26 @@ import psycopg2
 try:
     conn = psycopg2.connect(
         host="localhost",
-        port="5432",
         database="kitsumadb",
         user="postgres",
-        password="Tanmay10"
+        password="Usaid@10",
+        port="5432"
     )
 
-    print("Connected successfully!")
+    login_id=input("enter your login_id :")
+    password=input("enter password :")
 
-    cur = conn.cursor()
-
-    cur.execute("SELECT login FROM users;")
-
-    rows = cur.fetchall()
-
-    for row in rows:
-        print("User:", row[0])
-
-    cur.close()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE login = %s AND password = crypt(%s, password);",(login_id,password))
+    output = cursor.fetchall()
+    if output :
+        exists=True
+    else:
+        exists=False
+    if exists:
+        cursor.execute("select file_content from personalized_files where user_login=%s",(login_id,))
+        
+    cursor.close()
     conn.close()
 
 except Exception as e:
