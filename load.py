@@ -21,6 +21,9 @@ try:
         exists=False
     if exists:
         cursor.execute("select file_content from personalized_files where user_login=%s",(login_id,))
+        output=cursor.fetchall()
+        with open('structure.txt','w+') as f:
+            f.write(output[0][0])
         
     cursor.close()
     conn.close()
