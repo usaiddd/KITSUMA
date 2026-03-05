@@ -64,7 +64,28 @@ def getdata(login_id):
             return 1
     except Exception as e:
         return 2
-    
+def putfilecontent(filename, file):
+    try:
+        with open(file, "r") as f:
+            filecontent = f.read()
+        conn = psycopg2.connect(
+            host="localhost",
+            database="kitsumadb",
+            user="postgres",
+            password="Tanmay10",
+            port="5432"
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT filename from file where filename = %s;", (filename, ))
+        output = cursor.fetchall()
+        if (output): 
+            cursor.execute("UPDATE file set file_content = %s where filename = %s;", (filecontent, filename))
+        else: 
+            cursor.execute("Insert into file (filename, file_content) values (%s, %s);", (filename, filecontent))
+        conn.commit()
+        conn.close() 
+    except Exception as e: 
+        return 2    
 def getfiledata(file_path,base_path,file_name): 
     try:
         conn = psycopg2.connect(
@@ -105,6 +126,12 @@ if __name__ == "__main__":
         user = sys.argv[2]
         code = getdata(user)
 
+    elif operation == "A": 
+        filename = sys.argv[2]
+        
+        file = sys.argv[3]
+        code = putfilecontent(filename, file)
+        
     elif operation == "GF":
         file_path=sys.argv[2]
         base_path=sys.argv[3]
