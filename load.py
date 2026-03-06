@@ -72,7 +72,7 @@ def putfilecontent(filename, file):
             host="localhost",
             database="kitsumadb",
             user="postgres",
-            password="Tanmay10",
+            password="Usaid@10",
             port="5432"
         )
         cursor = conn.cursor()

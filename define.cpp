@@ -1,5 +1,6 @@
 #include<iostream>
 #include<cstdlib>
+#include<vector>
 #include<fstream>
 #include<string>
 using namespace std;
@@ -17,6 +18,8 @@ public:
 
 int main(){
     system("g++ run.cpp -o run && .\\run");
+    vector<string> files,filepath;
+    int index=0;
     user *u;
     string base="C:/testing";
     ifstream inputFile("structure.txt");
@@ -72,10 +75,20 @@ int main(){
                 system(final.c_str());
                 final= "python load.py GF \"" + line + "\" \"" + base + "\" \"" + file_name + "\"";
                 system(final.c_str());
+                files.push_back(file_name);
+                filepath.push_back(base+'/'+line);
                 file=false;
                 folder=true;
             }
         }
     }
+    inputFile.close();
+    ofstream ofs("structure.txt", ofstream::out | ofstream::trunc);
+    for (string i : files){
+        ofs<<i<<endl;
+        ofs<<filepath[index]<<endl;
+        index++;
+    }
+    ofs.close();
     return 0;
 }

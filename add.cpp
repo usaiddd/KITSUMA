@@ -1,37 +1,41 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <fstream>
+#include <string>
 #include <cstdlib>
-#include <filesystem>
+#include <algorithm>
+#include <map>
 using namespace std; 
 
 int main(){
-    vector <string> files;
-    string currdir = filesystem::current_path().string(); 
-    for (auto it = filesystem::recursive_directory_iterator("."); 
-        it != filesystem::recursive_directory_iterator(); ++it) {
-        string name = it->path().filename().string();
-        if (name[0] == '.') {
-            if (it->is_directory())
-                it.disable_recursion_pending();
-            continue;
+    map<string,string> file_obj;
+    bool file=true;
+    string i,name;
+    ifstream ipf("structure.txt");
+    while(getline(ipf,i)){
+        if(file){
+            name=i;
+            file_obj[i]="";
+            file=false;
         }
-        string exclude = ".exe"; 
-        int res = name.find(exclude); 
-        if (res == string::npos){ 
-            files.push_back(it->path().filename().string());
+        else{
+            file_obj[name]=i;
+            file=true;
         }
     }
     cout << "All files present in current working directory: \n\n";
-    for (int i=0; i<files.size(); i++){
-        cout << files[i] << "\n"; 
+    for (auto pair:file_obj){
+        cout << pair.first << "\n"; 
     }
     cout << "\n";
     string n; 
     cout << "Enter number of files to add (. for all): ";
     cin >> n;
     if (n == "."){ 
-        for (int i=0; i<files.size(); i++){ 
-            string filename = files[i];
-            ifstream file(filename); 
+        for (auto pair:file_obj){ 
+            string obj = pair.second;
+            ifstream file(obj); 
             string filecontent; 
             if (!file.is_open()){ 
                 cout << "Failed to open file. "; 
@@ -46,7 +50,7 @@ int main(){
             ofstream temp("tempcontent.txt");
             temp << filecontent;
             temp.close();
-            string command = "python load.py A \"" + filename + "\" tempcontent.txt";
+            string command = "python load.py A \"" + pair.first + "\" tempcontent.txt";
             system(command.c_str());
         }
     }
@@ -58,14 +62,16 @@ int main(){
             while (!chosen){ 
                 cout << "Enter filename to add/update: "; 
                 cin >> filename; 
-                if (find(files.begin(), files.end(), filename) != files.end()) {
+                auto it = file_obj.find(filename);
+                if (it != file_obj.end()) {
                     chosen = true; 
                 } 
                 else {
                     cout << "File does not exist in current working directory, Try again. \n"; 
                 }
             }
-            ifstream file(filename); 
+            ifstream file(file_obj[filename]); 
+            cout<<filename;
             string filecontent; 
             if (!file.is_open()){ 
                 cout << "Failed to open file. "; 
@@ -82,9 +88,6 @@ int main(){
             temp.close();
             string command = "python load.py A \"" + filename + "\" tempcontent.txt";
             system(command.c_str());
-            if (filesystem::exists("tempcontent.txt")) {
-                filesystem::remove("tempcontent.txt");
-            }
         }
     }
     
