@@ -1,6 +1,29 @@
-#include <bits/stdc++.h>
+#include <iostream>
 #include <fstream>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <algorithm>
+#include <conio.h>
 using namespace std;
+
+string getPassword() {
+    string pass;
+    char ch;
+    while ((ch = _getch()) != '\r') {
+        if (ch == '\b') {
+            if (!pass.empty()) {
+                pass.pop_back();
+                cout << "\b \b";  
+            }
+        } else {
+            pass += ch;
+            cout << '*';
+        }
+    }
+    cout << endl;
+    return pass;
+}
 
 int main(){
     system("cls");
@@ -19,14 +42,16 @@ int main(){
                 cin >> sign_up;
                 cout << "Enter your AdminPass: ";
                 cin >> new_pass;
+                cout << "Enter container name for your project: "; 
+                string conname;
+                cin.ignore();
+                getline(cin, conname);
+                sign_up = sign_up + "@" + conname; 
                 string command = "python load.py S \"" + sign_up + "\" \"" + new_pass + "\"";
                 int res = system(command.c_str());
                 if (res == 0) {
                     cout << "Signup successful!\n";
                     user = sign_up;
-                    cout << "Enter container name for your project: "; 
-                    string conname; 
-                    cin >> conname;
                     int employeecount; 
                     cout << "Enter number of employees in your project: "; 
                     cin >> employeecount; 
@@ -35,11 +60,118 @@ int main(){
                         string loginID, pass;
                         cout << "   Enter LoginID of employee " << i+1 << ": ";
                         cin >> loginID; 
+                        loginID = loginID + "@" + conname;
                         cout << "   Enter Password of employee " << i+1 << ": ";
-                        cin >> pass;
+                        pass = getPassword();
                         employees.push_back({loginID, pass}); 
+                        cout << "\n";
                     }
-                    command = "python load.py S \"" + sign_up + "\" \"" + new_pass + "\"";
+                    ofstream out("data.txt"); 
+                    for (auto&p: employees){ 
+                        out << p.first << "|" << p.second << "\n"; 
+                    }
+                    out.close(); 
+                    command = "python load.py PD \"" + conname + "\" \"" + user + "\"";
+                    int res2 = system(command.c_str()); 
+                    if (res2 == 0){ 
+                        cout << "Login ID's successfully created.";
+                        system("cls");
+                        cout << "DEFINE CONTAINER STRUCTURE";
+                        vector<string> structure, pathStack;
+                        while (true) {
+                            string currentPath = "";
+                            for (int i = 0; i < pathStack.size(); i++) {
+                                currentPath += pathStack[i];
+                                if (i != pathStack.size() - 1) currentPath += "/";
+                            }
+                            cout << "\nCurrent path: /" << currentPath << endl;
+                            cout << "1. Add Folder\n";
+                            cout << "2. Add File\n";
+                            cout << "3. Go Inside Folder\n";
+                            cout << "4. Go Back\n";
+                            cout << "5. Finish\n";
+                            cout << "Choice: ";
+                            int choice;
+                            cin >> choice;
+                            if (choice == 1) {
+                                string name;
+                                cout << "Enter folder name: ";
+                                cin >> name;
+                                string fullPath = currentPath.empty() ? name : currentPath + "/" + name;
+                                structure.push_back(fullPath);
+                            } 
+                            else if (choice == 2) {
+                                string name;
+                                cout << "Enter file name (with extension): ";
+                                cin >> name;
+                                string fullPath = currentPath.empty() ? name : currentPath + "/" + name;
+                                structure.push_back(fullPath);
+                            } 
+                            else if (choice == 3) {
+                                vector<string> possible;
+                                for (auto &s : structure) {
+                                    if (currentPath.empty() || s.find(currentPath + "/") == 0) {
+                                        string remaining;
+                                        if (currentPath.empty())
+                                            remaining = s;
+                                        else
+                                            remaining = s.substr(currentPath.size() + 1);
+                                        int pos = remaining.find('/');
+                                        if (pos != string::npos) {
+                                            string folder = remaining.substr(0, pos);
+                                            if (find(possible.begin(), possible.end(), folder) == possible.end()) {
+                                                possible.push_back(folder);
+                                            }
+                                        }
+                                    }
+                                }
+                                if (possible.empty()) {
+                                    cout << "No folders available here.\n";
+                                    continue;
+                                }
+                                cout << "Available folders:\n";
+                                for (int i = 0; i < possible.size(); i++) {
+                                    cout << i + 1 << ". " << possible[i] << endl;
+                                }
+                                cout << "Enter choice: ";
+                                int idx;
+                                cin >> idx;
+                                if (idx >= 1 && idx <= possible.size()) {
+                                    pathStack.push_back(possible[idx - 1]);
+                                } else {
+                                    cout << "Invalid choice\n";
+                                }
+                            }
+                            else if (choice == 4) {
+                                if (!pathStack.empty()) {
+                                    pathStack.pop_back();
+                                } else {
+                                    cout << "Already at root.\n";
+                                }
+                            } 
+                            else if (choice == 5) {
+                                break;
+                            } 
+                            else {
+                                cout << "Invalid choice\n";
+                            }
+                        }
+                        ofstream out("structure.txt");
+                        for (auto &s : structure) {
+                            out << s << "\n";
+                        }
+                        out.close();
+                        
+                    }
+                    else if (res2 == 1){ 
+                        cout << "One of the login credentials created already exists, Try again.";
+                        command = "python load.py X \"" + user + "\"";
+                        int res3 = system(command.c_str());
+                    }
+                    else if (res2 == 2){ 
+                        cout << "Error occurred, Try again. ";
+                    }
+                    remove("data.txt");
                     break;
                 }
                 else if (res == 1) {
