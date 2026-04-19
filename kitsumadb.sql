@@ -18,7 +18,7 @@ EXECUTE FUNCTION hash_password();
 
 CREATE TABLE container(
     login varchar(100) REFERENCES users(login),
-    container_no SERIAL INTEGER PRIMARY KEY,
+    container_no SERIAL PRIMARY KEY,
     container_name varchar(100)
 ); 
 

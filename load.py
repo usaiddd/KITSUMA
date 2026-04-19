@@ -44,6 +44,50 @@ def login(login_id, password):
             return 1
     except Exception as e:
         return 2
+
+def deleteuser(user): 
+    try:
+        conn = psycopg2.connect(
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
+            port="5432"
+        )
+        cursor = conn.cursor()
+        cursor.execute("delete from users where login = %s;", (user, ))
+        conn.commit()
+        cursor.close() 
+    except Exception as e:
+        return 2
+    
+def putdata(conname, user): 
+    try:
+        conn = psycopg2.connect(
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
+            port="5432"
+        )   
+        cursor = conn.cursor()
+        cursor.execute("insert into container (login, container_name) values (%s, %s); ", (user, conname))
+        with open("data.txt", "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    userr, password = line.split("|")
+                    cursor.execute("SELECT * FROM users WHERE login = %s;", (userr,))
+                    ifIDexists = cursor.fetchall()
+                    if (ifIDexists):
+                        conn.close()
+                        return 1
+                    cursor.execute("insert into users values (%s, %s);", (userr,password))
+        conn.commit()
+        conn.close()
+        return 0
+    except Exception as e:
+        return 2
 def getdata(login_id): 
     try:
         conn = psycopg2.connect(
@@ -162,15 +206,22 @@ if __name__ == "__main__":
         file_name=sys.argv[4]
         code = getfiledata(file_path,base_path,file_name)
 
-    elif operation == "P": 
+    elif operation == "PU": 
         filename = sys.argv[2]
         file = sys.argv[3]
         message = sys.argv[4]
         user_login = sys.argv[5]
         code = pushes(filename, file, message, user_login)
 
+    elif operation == "PD": 
+        conname = sys.argv[2]
+        user = sys.argv[3]
+        code = putdata(conname, user)
+    
+    elif operation == "X": 
+        user = sys.argv[2]
+        code = deleteuser(user)
     else:
         code = 2
 
     sys.exit(code)
-    

@@ -63,7 +63,7 @@ int main(){
             } else {
                 cout << "Failed to open the file." << std::endl;
             } 
-            command = "python load.py P \"" + pair.first + "\" \"" + "tempcontent.txt" + "\" \"" + msg + "\" \"" + username + "\"";
+            command = "python load.py PU \"" + pair.first + "\" \"" + "tempcontent.txt" + "\" \"" + msg + "\" \"" + username + "\"";
             system(command.c_str());
         }
     }
