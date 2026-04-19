@@ -24,11 +24,14 @@ int main(){
             file=true;
         }
     }
+    cout << "Enter commit message: \n"; 
+    string msg; 
+    getline(cin, msg);
     cout << "All files present in current working directory: \n\n";
     for (auto pair:file_obj){
         cout << pair.first << "\n"; 
     }
-    cout << "\n";
+    cout << "\n"; 
     string n; 
     cout << "Enter number of files to add (. for all): ";
     cin >> n;
@@ -49,8 +52,18 @@ int main(){
             }
             ofstream temp("tempcontent.txt");
             temp << filecontent;
-            temp.close();
+            temp.close(); 
             string command = "python load.py A \"" + pair.first + "\" tempcontent.txt";
+            system(command.c_str());
+            ifstream login("LoggedIn.txt"); 
+            string username; 
+            if (login.is_open()) {
+                getline(login, username);
+                login.close();
+            } else {
+                cout << "Failed to open the file." << std::endl;
+            } 
+            command = "python load.py P \"" + pair.first + "\" \"" + "tempcontent.txt" + "\" \"" + msg + "\" \"" + username + "\"";
             system(command.c_str());
         }
     }
@@ -88,8 +101,8 @@ int main(){
             temp.close();
             string command = "python load.py A \"" + filename + "\" tempcontent.txt";
             system(command.c_str());
+            
         }
     }
-    
     return 0; 
 }

@@ -24,6 +24,22 @@ int main(){
                 if (res == 0) {
                     cout << "Signup successful!\n";
                     user = sign_up;
+                    cout << "Enter container name for your project: "; 
+                    string conname; 
+                    cin >> conname;
+                    int employeecount; 
+                    cout << "Enter number of employees in your project: "; 
+                    cin >> employeecount; 
+                    vector <pair<string, string>> employees; 
+                    for (int i=0; i<employeecount; i++){ 
+                        string loginID, pass;
+                        cout << "   Enter LoginID of employee " << i+1 << ": ";
+                        cin >> loginID; 
+                        cout << "   Enter Password of employee " << i+1 << ": ";
+                        cin >> pass;
+                        employees.push_back({loginID, pass}); 
+                    }
+                    command = "python load.py S \"" + sign_up + "\" \"" + new_pass + "\"";
                     break;
                 }
                 else if (res == 1) {
@@ -63,6 +79,9 @@ int main(){
     }
     string command = "python load.py G \"" + user + "\"";
     int res = system(command.c_str());
+    ofstream login("LoggedIn.txt");
+    login << user; 
+    login.close();  
     return 0;
 }
 
