@@ -4,10 +4,10 @@ import sys
 def signup(sign_up, new_pass): 
     try:
         conn = psycopg2.connect(
-            host="localhost",
-            database="kitsumadb",
-            user="postgres",
-            password="Usaid@10",
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
             port="5432"
         )
         cursor = conn.cursor()
@@ -17,6 +17,7 @@ def signup(sign_up, new_pass):
             conn.close()
             return 1
         cursor.execute("INSERT INTO users (login, password) VALUES (%s, %s);", (sign_up, new_pass))
+        username = sign_up
         conn.commit()
         conn.close()
         return 0 
@@ -25,16 +26,17 @@ def signup(sign_up, new_pass):
 def login(login_id, password): 
     try:
         conn = psycopg2.connect(
-            host="localhost",
-            database="kitsumadb",
-            user="postgres",
-            password="Usaid@10",
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
             port="5432"
         )
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE login = %s AND password = crypt(%s, password);", (login_id, password))
         output = cursor.fetchall()
         if (output): 
+            username = login_id
             conn.close()
             return 0
         else:
@@ -45,12 +47,12 @@ def login(login_id, password):
 def getdata(login_id): 
     try:
         conn = psycopg2.connect(
-            host="localhost",
-            database="kitsumadb",
-            user="postgres",
-            password="Usaid@10",
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
             port="5432"
-        )
+        )   
         cursor = conn.cursor()
         cursor.execute("SELECT structure from personalized_files where user_login = %s; ", (login_id, ))
         output = cursor.fetchall()
@@ -69,10 +71,10 @@ def putfilecontent(filename, file):
         with open(file, "r") as f:
             filecontent = f.read()
         conn = psycopg2.connect(
-            host="localhost",
-            database="kitsumadb",
-            user="postgres",
-            password="Usaid@10",
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
             port="5432"
         )
         cursor = conn.cursor()
@@ -89,14 +91,13 @@ def putfilecontent(filename, file):
 def getfiledata(file_path,base_path,file_name): 
     try:
         conn = psycopg2.connect(
-            host="localhost",
-            database="kitsumadb",
-            user="postgres",
-            password="Usaid@10",
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
             port="5432"
         )
         cursor = conn.cursor()
-        print(file_name)
         cursor.execute("SELECT file_content from file where filename = %s; ", (file_name, ))
         output = cursor.fetchall()
         location=base_path+'/'+file_path
@@ -110,7 +111,31 @@ def getfiledata(file_path,base_path,file_name):
             return 1
     except Exception as e:
         return 2
-
+def pushes(filename, file, message, user_login): 
+    try:
+        with open(file, "r") as f:
+            filecontent = f.read()
+        conn = psycopg2.connect(
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
+            port="5432"
+        )   
+        cursor = conn.cursor()
+        cursor.execute("SELECT fileno from file where filename = %s;", (filename, ))
+        output = cursor.fetchall()
+        
+        if (output): 
+            cursor.execute("INSERT INTO pushes (fileno, file_content, message, user_login) values (%s, %s, %s, %s); ", (output[0][0], filecontent, message, user_login))
+            conn.commit() 
+            conn.close() 
+            return 0;
+        else:
+            conn.close()
+            return 1
+    except Exception as e:
+        return 2
 if __name__ == "__main__":
     operation = sys.argv[1]
     if operation == "S" or operation == "L":
@@ -128,7 +153,6 @@ if __name__ == "__main__":
 
     elif operation == "A": 
         filename = sys.argv[2]
-        
         file = sys.argv[3]
         code = putfilecontent(filename, file)
         
@@ -138,7 +162,15 @@ if __name__ == "__main__":
         file_name=sys.argv[4]
         code = getfiledata(file_path,base_path,file_name)
 
+    elif operation == "P": 
+        filename = sys.argv[2]
+        file = sys.argv[3]
+        message = sys.argv[4]
+        user_login = sys.argv[5]
+        code = pushes(filename, file, message, user_login)
+
     else:
         code = 2
 
     sys.exit(code)
+    
