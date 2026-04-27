@@ -2,11 +2,13 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <set> 
 #include <fstream>
+#include <limits>
 #include <algorithm>
 #include <conio.h>
+#include <sstream>
 using namespace std;
-
 string getPassword() {
     string pass;
     char ch;
@@ -24,7 +26,6 @@ string getPassword() {
     cout << endl;
     return pass;
 }
-
 int main(){
     system("cls");
     cout << "WELCOME TO KITSUMA - HIERARCHY BASED VERSION CONTROL SYSTEM\n";
@@ -110,15 +111,22 @@ int main(){
                             else if (choice == 3) {
                                 vector<string> possible;
                                 for (auto &s : structure) {
-                                    if (currentPath.empty() || s.find(currentPath + "/") == 0) {
-                                        string remaining;
-                                        if (currentPath.empty())
-                                            remaining = s;
-                                        else
-                                            remaining = s.substr(currentPath.size() + 1);
+                                    if (currentPath.empty()) {
+                                        int pos = s.find('/');
+                                        string folder = (pos == string::npos) ? s : s.substr(0, pos);
+                                        if (folder.find('.') == string::npos) { 
+                                            if (find(possible.begin(), possible.end(), folder) == possible.end()) {
+                                                possible.push_back(folder);
+                                            }
+                                        }
+                                    } 
+                                    else if (s.find(currentPath + "/") == 0) {
+                                        string remaining = s.substr(currentPath.size() + 1);
                                         int pos = remaining.find('/');
+
                                         if (pos != string::npos) {
                                             string folder = remaining.substr(0, pos);
+
                                             if (find(possible.begin(), possible.end(), folder) == possible.end()) {
                                                 possible.push_back(folder);
                                             }
@@ -157,16 +165,167 @@ int main(){
                             }
                         }
                         ofstream out("structure.txt");
+                        
                         for (auto &s : structure) {
                             out << s << "\n";
                         }
                         out.close();
-                        
+                        system("cls"); 
+                        cout << "ALL MAIN FOLDERS AVAILABLE IN THE CONTAINER\n"; 
+                        vector<string> rootFolders;
+                        for (auto &s : structure) {
+                            int pos = s.find('/');
+                            string top = (pos == string::npos) ? s : s.substr(0, pos);
+                            if (top.find('.') == string::npos) {
+                                if (find(rootFolders.begin(), rootFolders.end(), top) == rootFolders.end()) {
+                                    rootFolders.push_back(top);
+                                }
+                            }
+                        }
+                        for (int i = 0; i < rootFolders.size(); i++) {
+                            cout << i + 1 << ". " << rootFolders[i] << endl;
+                        }
+                        cout << "\nLIST OF EMPLOYEES AVAILABLE IN CONTAINER\n"; 
+                        for (int i=0; i<employees.size(); i++){ 
+                            cout << i+1 << ". " << employees[i].first << endl; 
+                        }
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        vector<vector<int>> folderemployees; 
+                        cout << "\nCHOOSE EMPLOYEES FOR EACH FOLDER (Input corresponding employee numbers)\n"; 
+                        for (int i=0; i<rootFolders.size(); i++){
+                            cout << i+1 << ". " << rootFolders[i] << ": "; 
+                            string line;
+                            getline(cin, line);
+                            vector<int> x;
+                            stringstream ss(line);
+                            int num;
+                            while (ss >> num) {
+                                if (num >= 1 && num <= employees.size()) {
+                                    x.push_back(num);
+                                } else {
+                                    cout << "Invalid employee number ignored: " << num << endl;
+                                }
+                            }
+                            folderemployees.push_back(x);
+                        }
+                        cout << "\nEMPLOYEES ASSIGNED TO EACH FOLDER\n";
+                        for (int i = 0; i < folderemployees.size(); i++) {
+                            cout << rootFolders[i] << ": ";
+                            for (int num : folderemployees[i]) {
+                                cout << num << " ";
+                            }
+                            cout << endl;
+                        }
+                        cout << "\nDECLARE AN EMPLOYEE AS FOLDER HEAD";
+                        vector<int> folderHead(rootFolders.size(), -1);  
+                        set<int> used;  
+                        for (int i=0; i<rootFolders.size(); i++){
+                            while (true) {
+                                cout << "\n" << i+1 << ". " << rootFolders[i] << "\n";
+                                cout << "Available Employees for this folder:\n";
+                                for (int j = 0; j < folderemployees[i].size(); j++) {
+                                    int empNum = folderemployees[i][j];
+                                    if (!used.count(empNum)) {
+                                        cout << empNum << ". " << employees[empNum - 1].first << endl; 
+                                    }
+                                }
+                                cout << "Enter employee number: ";
+                                int choice;
+                                cin >> choice;
+                                bool isInFolder = false;
+                                for (int num : folderemployees[i]) {
+                                    if (num == choice) {
+                                        isInFolder = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!isInFolder) {
+                                    cout << "Invalid choice. You must pick an employee assigned to this folder.\n";
+                                    continue;
+                                }
+                                if (used.count(choice)) {
+                                    cout << "Employee already assigned. Choose another.\n";
+                                    continue;
+                                }
+                                folderHead[i] = choice;
+                                used.insert(choice);
+                                break;
+                            }
+                        }
+                        cout << "\nFINAL FOLDER HEADS:\n";
+                        for (int i = 0; i < rootFolders.size(); i++) {
+                            cout << rootFolders[i] << ": " << employees[folderHead[i] - 1].first << endl;
+                        }
+                        system("cls"); 
+                        cout << "\nDECLARE HIERARCHY OF EACH FOLDER\n";
+                        vector<vector<int>> folderhierarchy; 
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                        for (int i=0; i<rootFolders.size(); i++){ 
+                            cout << i+1 << ". " << rootFolders[i] << endl;
+                            cout << "AVAILABLE EMPLOYEES IN FOLDER: \n";
+                            for (int j=0; j<folderemployees[i].size(); j++){ 
+                                cout << "   " << j+1 << ". " << employees[folderemployees[i][j] - 1].first << endl; 
+                            }
+                            cout << "Enter hierarchy of folder (corresponding numbers): "; 
+                            string line;
+                            getline(cin, line);
+                            vector<int> x;
+                            stringstream ss(line);
+                            int num;
+                            while (ss >> num) {
+                                if (num >= 1 && num <= folderemployees[i].size()) {
+                                    x.push_back(folderemployees[i][num - 1]);
+                                } else {
+                                    cout << "Invalid employee number ignored: " << num << endl;
+                                }
+                            }
+                            folderhierarchy.push_back(x);
+                            cout << endl; 
+                        }
+                        cout << "\nFOLDER HIERARCHY MAPPING\n";
+                        for (int i = 0; i < rootFolders.size(); i++) {
+                            cout << "\n" << rootFolders[i] << ":\n";
+                            if (folderhierarchy[i].empty()) {
+                                cout << "   None\n";
+                                continue;
+                            }
+                            for (int j = 0; j < folderhierarchy[i].size(); j++) {
+                                int empIndex = folderhierarchy[i][j] - 1;
+                                cout << "   " << j+1 << ". "
+                                    << employees[empIndex].first << endl;
+                            }
+                        }
+                        ofstream hout("hierarchy_data.txt");
+                        for (auto &s : structure) {
+                            hout << "PATH|" << s << "\n";
+                        }
+                        for (int i = 0; i < rootFolders.size(); i++) {
+                            for (int num : folderemployees[i]) {
+                                hout << "EMP|" << rootFolders[i] << "|" << employees[num - 1].first << "\n";
+                            }
+                            if (folderHead[i] != -1) {
+                                hout << "HEAD|" << rootFolders[i] << "|" << employees[folderHead[i] - 1].first << "\n";
+                            }
+                            for (int j = 0; j < folderhierarchy[i].size(); j++) {
+                                hout << "HIER|" << rootFolders[i] << "|" 
+                                     << employees[folderhierarchy[i][j] - 1].first << "|" << (j + 1) << "\n";
+                            }
+                        }
+                        hout.close();
+                        string ph_command = "python load.py PH \"" + conname + "\"";
+                        int ph_res = system(ph_command.c_str());
+                        if (ph_res == 0) {
+                            cout << "\n[Success] Container hierarchy saved to database!\n";
+                        } else {
+                            cout << "\n[Error] Failed to save hierarchy to database.\n";
+                        }
                     }
+                    
                     else if (res2 == 1){ 
                         cout << "One of the login credentials created already exists, Try again.";
                         command = "python load.py X \"" + user + "\"";
-                        int res3 = system(command.c_str());
+                        int res4 = system(command.c_str());
                     }
                     else if (res2 == 2){ 
                         cout << "Error occurred, Try again. ";

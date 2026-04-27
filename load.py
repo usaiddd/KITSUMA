@@ -180,6 +180,70 @@ def pushes(filename, file, message, user_login):
             return 1
     except Exception as e:
         return 2
+    
+def save_hierarchy(conname):
+    try:
+        conn = psycopg2.connect(
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
+            port="5432"
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT container_no, login FROM container WHERE container_name = %s;", (conname,))
+        container_result = cursor.fetchone()
+        if not container_result:
+            conn.close()
+            return 1
+        container_no = container_result[0]
+        admin_login = container_result[1]
+        paths = []
+        user_roots = {}
+        user_auth = {}
+        with open("hierarchy_data.txt", "r") as f:
+            for line in f:
+                parts = line.strip().split("|")
+                if len(parts) < 2: continue
+                record_type = parts[0]
+                if record_type == "PATH":
+                    paths.append(parts[1])
+                elif record_type == "EMP":
+                    folder, login = parts[1], parts[2]
+                    if login not in user_roots:
+                        user_roots[login] = set()
+                        user_auth[login] = "E" 
+                    user_roots[login].add(folder)
+                    cursor.execute("INSERT INTO folder_employees (container_no, folder_path, user_login) VALUES (%s, %s, %s);", 
+                                   (container_no, folder, login))
+                elif record_type == "HEAD":
+                    folder, login = parts[1], parts[2]
+                    user_auth[login] = "FH" 
+                    cursor.execute("INSERT INTO folder_heads (container_no, folder_path, user_login) VALUES (%s, %s, %s);", 
+                                   (container_no, folder, login))
+                elif record_type == "HIER":
+                    folder, login, rank = parts[1], parts[2], parts[3]
+                    cursor.execute("INSERT INTO folder_hierarchy (container_no, folder_path, user_login, rank) VALUES (%s, %s, %s, %s);", 
+                                   (container_no, folder, login, int(rank)))
+        admin_struct = f"{conname}\nauth:\nA\nstruct:\n" + "\n".join(paths)
+        cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (admin_login, admin_struct))
+        for login, roots in user_roots.items():
+            allowed_paths = []
+            for p in paths:
+                for r in roots:
+                    if p == r or p.startswith(r + "/"):
+                        allowed_paths.append(p)
+                        break
+            auth_level = user_auth.get(login, "E")
+            struct_text = f"{conname}\nauth:\n{auth_level}\nstruct:\n" + "\n".join(allowed_paths)
+            cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (login, struct_text))             
+        conn.commit()
+        conn.close()
+        return 0
+    except Exception as e:
+        print(f"Error: {e}") 
+        return 2
+
 if __name__ == "__main__":
     operation = sys.argv[1]
     if operation == "S" or operation == "L":
@@ -221,6 +285,10 @@ if __name__ == "__main__":
     elif operation == "X": 
         user = sys.argv[2]
         code = deleteuser(user)
+
+    elif operation == "PH":
+        conname = sys.argv[2]
+        code = save_hierarchy(conname)
     else:
         code = 2
 
