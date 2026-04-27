@@ -9,11 +9,16 @@ try:
         port="5432"
     )
     cursor = conn.cursor()
-    """ cursor.execute("delete from users where login = %s", ("Tanmay@MusicPlayer", ))
-    conn.commit()  """
-    cursor.execute("select * from users; ")
+    # cursor.execute("DELETE FROM folder_employees; ")
+    # cursor.execute("DELETE FROM folder_heads; ")
+    # cursor.execute("DELETE FROM folder_hierarchy; ")
+    # cursor.execute("DELETE FROM personalized_files; ")
+    # cursor.execute("DELETE FROM CONTAINER; ")
+    # cursor.execute("DELETE FROM USERS where login = %s; ", ("Tanmay@MusicPlayer", ))
+    cursor.execute("SELECT * from personalized_files; ")
     output = cursor.fetchall()
     print(output)
+    conn.commit()
     cursor.close()
     conn.close()
 

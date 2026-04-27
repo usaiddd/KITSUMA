@@ -20,6 +20,7 @@ CREATE TABLE container(
     login varchar(100) REFERENCES users(login),
     container_no SERIAL PRIMARY KEY,
     container_name varchar(100)
+    
 ); 
 
 CREATE TABLE containertofile(
@@ -64,4 +65,24 @@ CREATE TABLE pushes(
 CREATE TABLE users (
     login VARCHAR(100) PRIMARY KEY,
     password TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS folder_employees (
+    container_no INTEGER REFERENCES container(container_no),
+    folder_path TEXT NOT NULL,
+    user_login VARCHAR(100) REFERENCES users(login)
+);
+
+CREATE TABLE IF NOT EXISTS folder_heads (
+    container_no INTEGER REFERENCES container(container_no),
+    folder_path TEXT NOT NULL,
+    user_login VARCHAR(100) REFERENCES users(login),
+    PRIMARY KEY (container_no, folder_path)
+);
+
+CREATE TABLE IF NOT EXISTS folder_hierarchy (
+    container_no INTEGER REFERENCES container(container_no),
+    folder_path TEXT NOT NULL,
+    user_login VARCHAR(100) REFERENCES users(login),
+    rank INTEGER NOT NULL 
 );
