@@ -48,6 +48,8 @@ int main(){
                 cin.ignore();
                 getline(cin, conname);
                 sign_up = sign_up + "@" + conname; 
+                ofstream out("conname.txt");
+                out << conname << "\n"; 
                 string command = "python load.py S \"" + sign_up + "\" \"" + new_pass + "\"";
                 int res = system(command.c_str());
                 if (res == 0) {
@@ -159,14 +161,24 @@ int main(){
                             } 
                             else if (choice == 5) {
                                 break;
-                            } 
+                            }
                             else {
                                 cout << "Invalid choice\n";
                             }
                         }
+                        string name = ""; 
+                        bool file = false;  
                         ofstream out("structure.txt");
-                        
                         for (auto &s : structure) {
+                            for (char i: s){  
+                                name+=i;  
+                                if (i == '.'){ 
+                                    file = true; 
+                                }
+                            }
+                            if (file){ 
+                                command = "python load.py A \"" + name + "\" \"" + name + "\"";
+                            }
                             out << s << "\n";
                         }
                         out.close();
@@ -239,7 +251,6 @@ int main(){
                                         break;
                                     }
                                 }
-
                                 if (!isInFolder) {
                                     cout << "Invalid choice. You must pick an employee assigned to this folder.\n";
                                     continue;
@@ -311,6 +322,7 @@ int main(){
                                 hout << "HIER|" << rootFolders[i] << "|" 
                                      << employees[folderhierarchy[i][j] - 1].first << "|" << (j + 1) << "\n";
                             }
+
                         }
                         hout.close();
                         string ph_command = "python load.py PH \"" + conname + "\"";
@@ -321,7 +333,6 @@ int main(){
                             cout << "\n[Error] Failed to save hierarchy to database.\n";
                         }
                     }
-                    
                     else if (res2 == 1){ 
                         cout << "One of the login credentials created already exists, Try again.";
                         command = "python load.py X \"" + user + "\"";
@@ -331,6 +342,7 @@ int main(){
                         cout << "Error occurred, Try again. ";
                     }
                     remove("data.txt");
+                    remove("hierarchy_data.txt");
                     break;
                 }
                 else if (res == 1) {
@@ -353,8 +365,8 @@ int main(){
                 int res = system(command.c_str());
                 if (res == 0) {
                     cout << "\nWelcome to KITSUMA, " << login_id << endl;
-                    user = login_id; 
-                    break;
+                    user = login_id;
+                    break; 
                 }
                 else if (res == 1) {
                     cout << "Invalid LoginID or Password. Try again.\n";

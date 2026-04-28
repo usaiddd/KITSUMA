@@ -20,12 +20,11 @@ CREATE TABLE container(
     login varchar(100) REFERENCES users(login),
     container_no SERIAL PRIMARY KEY,
     container_name varchar(100)
-    
 ); 
 
 CREATE TABLE containertofile(
     containerno INTEGER REFERENCES container(container_no),
-    fileno INTEGER REFERENCES file(fileno)
+    fileno INTEGER REFERENCES file(fileno), 
 );
 
 create table file(
@@ -51,6 +50,7 @@ CREATE TABLE pushes(
     file_content TEXT NOT NULL,
     message TEXT,
     user_login TEXT,
+    merged bool, 
     pushed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (fileno)

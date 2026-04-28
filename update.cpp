@@ -150,6 +150,5 @@ int main() {
             myfile<<e.line<<endl;
         }
     }
-
     return 0;
 }
