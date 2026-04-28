@@ -61,6 +61,14 @@ int main(){
         for (auto pair:file_obj){ 
             string obj = pair.second;
             final="python load.py CC \"" + obj + "\"";
+            int code=system(final.c_str());
+            if(code==1){
+                cout<<"conflicts hai chacha";
+            }
+            final="python load.py GFN \"" + obj + "\"";
+            system(final.c_str());
+            ifstream inpFile("temp.txt");
+            getline(inpFile,obj);
             ifstream file(obj); 
             string filecontent; 
             if (!file.is_open()){ 
