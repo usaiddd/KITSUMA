@@ -192,13 +192,16 @@ def save_hierarchy(conname):
         )
         cursor = conn.cursor()
         cursor.execute("SELECT container_no, login FROM container WHERE container_name = %s ORDER BY container_no DESC LIMIT 1;", (conname,))
+        cursor.execute("SELECT container_no, login FROM container WHERE container_name = %s ORDER BY container_no DESC LIMIT 1;", (conname,))
         container_result = cursor.fetchone()
         if not container_result:
             conn.close()
             return 1
         container_no = container_result[0]
         admin_login = container_result[1] 
+        admin_login = container_result[1] 
         paths = []
+        paths2 = {}
         paths2 = {}
         user_roots = {}
         user_auth = {}
@@ -208,6 +211,23 @@ def save_hierarchy(conname):
                 if len(parts) < 2: continue
                 record_type = parts[0]
                 if record_type == "PATH":
+                    path_str = parts[1]
+                    paths.append(path_str)
+                    filename_only = path_str.split('/')[-1]
+                    if '.' in filename_only:
+                        cursor.execute("SELECT fileno FROM file WHERE filename = %s;", (path_str,))
+                        file_result = cursor.fetchone()
+                        if not file_result:
+                            cursor.execute("INSERT INTO file (filename, file_content) VALUES (%s, '') RETURNING fileno;", (path_str,))
+                            fileno = cursor.fetchone()[0]
+                        else:
+                            fileno = file_result[0]
+                        cursor.execute("SELECT 1 FROM containertofile WHERE containerno = %s AND fileno = %s;", (container_no, fileno))
+                        if not cursor.fetchone():
+                            cursor.execute("INSERT INTO containertofile (containerno, fileno) VALUES (%s, %s);", (container_no, fileno))
+                        paths2[path_str] = str(fileno) 
+                    else: 
+                        paths2[path_str] = path_str
                     path_str = parts[1]
                     paths.append(path_str)
                     filename_only = path_str.split('/')[-1]
@@ -244,16 +264,21 @@ def save_hierarchy(conname):
                                    (container_no, folder, login, int(rank)))
         admin_paths = [paths2[p] for p in paths]
         admin_struct = f"{conname}\nauth:\nA\nstruct:\n" + "\n".join(admin_paths)
+        admin_paths = [paths2[p] for p in paths]
+        admin_struct = f"{conname}\nauth:\nA\nstruct:\n" + "\n".join(admin_paths)
         cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (admin_login, admin_struct))
         for login, roots in user_roots.items():
+            allowed_paths = []    
             allowed_paths = []    
             for p in paths:
                 for r in roots:
                     if p == r or p.startswith(r + "/"):
                         allowed_paths.append(paths2[p])
+                        allowed_paths.append(paths2[p])
                         break
             auth_level = user_auth.get(login, "E")
             struct_text = f"{conname}\nauth:\n{auth_level}\nstruct:\n" + "\n".join(allowed_paths)
+            cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (login, struct_text))           
             cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (login, struct_text))           
         conn.commit()
         conn.close()
@@ -319,7 +344,7 @@ def check_conflict(fileno):
         print(f"Error: {e}") 
         return 2
 
-
+    
 if __name__ == "__main__":
     operation = sys.argv[1]
 
