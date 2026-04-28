@@ -1,0 +1,8 @@
+MusicPlayer
+auth:
+A
+struct:
+frontend
+1
+backend
+2

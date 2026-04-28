@@ -142,7 +142,7 @@ def getfiledata(file_path,base_path,file_name):
             port="5432"
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT file_content from file where filename = %s; ", (file_name, ))
+        cursor.execute("SELECT file_content from file where filename = %s; ", (file_path, ))
         output = cursor.fetchall()
         location=base_path+'/'+file_path
         if (output): 
@@ -243,9 +243,57 @@ def save_hierarchy(conname):
     except Exception as e:
         print(f"Error: {e}") 
         return 2
+    
+def getname(fileno):
+    try:
+        conn = psycopg2.connect(
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
+            port="5432"
+        )
+        cursor=conn.cursor()
+        cursor.execute("select filename from file where fileno=%s;",(fileno,))
+        output=cursor.fetchall()
+        filename="temp.txt"
+        with open (filename,"w+") as f:
+            f.write(output[0][0])
+        conn.close()
+
+    except Exception as e:
+        print(f"Error: {e}") 
+        return 2
+    
+def check_conflict(fileno):
+    try:
+        conn = psycopg2.connect(
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
+            port="5432"
+        )
+        cursor=conn.cursor()
+        cursor.execute("select count(*) from pushes where fileno=%s and merge=false;",(fileno,))
+        output=cursor.fetchall()
+        num=output[0][0]
+        cursor.close()
+        conn.close()
+        if num>=2:
+            return 1
+        else:
+            return 0
+        
+
+    except Exception as e:
+        print(f"Error: {e}") 
+        return 2
+
 
 if __name__ == "__main__":
     operation = sys.argv[1]
+
     if operation == "S" or operation == "L":
         user = sys.argv[2]
         pwd = sys.argv[3]
@@ -254,6 +302,14 @@ if __name__ == "__main__":
             code = signup(user, pwd)
         else:
             code = login(user, pwd)
+
+    elif operation=="CC":
+        fileno= sys.argv[2]
+        code = check_conflict(fileno)
+
+    elif operation == "GFN":
+        fileno = sys.argv[2]
+        code = getname(fileno)
 
     elif operation == "G":
         user = sys.argv[2]

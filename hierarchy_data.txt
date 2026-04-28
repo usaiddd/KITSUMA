@@ -1,0 +1,5 @@
+PATH|fuck
+PATH|fuck/off.txt
+EMP|fuck|tanmay@aa
+HEAD|fuck|tanmay@aa
+HIER|fuck|tanmay@aa|1

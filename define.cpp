@@ -3,6 +3,8 @@
 #include<vector>
 #include<fstream>
 #include<string>
+#include <algorithm>
+#include <cctype>
 using namespace std;
 
 class user{
@@ -15,6 +17,12 @@ public:
         this->id=id;
     }
 };
+
+bool is_numeric(const std::string& s) {
+    return !s.empty() && std::all_of(s.begin(), s.end(), [](unsigned char c) {
+        return std::isdigit(c);
+    });
+}
 
 int main(){
     system("g++ run.cpp -o run && .\\run");
@@ -56,21 +64,19 @@ int main(){
         if(emps){
         }
         if(structure){
-            for(char i:line){
-                file_name+=i;
-                if(i=='/'){
-                    file_name="";
-                }
-                if(i=='.'){
-                    file=true;
-                    folder=false;
-                }
+            if(is_numeric(line)){
+                file=true;
+                folder=false;
             }
             if(folder){
                 final = "mkdir \"" + base + "/" + line + "\"";
                 system(final.c_str());
             }
             if(file){
+                final="python load.py GFN \"" + line + "\"";
+                system(final.c_str());
+                ifstream inpFile("temp.txt");
+                getline(inpFile,line);
                 final = "type nul > "+ base + "/" + line;
                 system(final.c_str());
                 final= "python load.py GF \"" + line + "\" \"" + base + "\" \"" + file_name + "\"";
@@ -83,12 +89,12 @@ int main(){
         }
     }
     inputFile.close();
-    ofstream ofs("structure.txt", ofstream::out | ofstream::trunc);
-    for (string i : files){
-        ofs<<i<<endl;
-        ofs<<filepath[index]<<endl;
-        index++;
-    }
-    ofs.close();
+    // ofstream ofs("structure.txt", ofstream::out | ofstream::trunc);
+    // for (string i : files){
+    //     ofs<<i<<endl;
+    //     ofs<<filepath[index]<<endl;
+    //     index++;
+    // }
+    // ofs.close();
     return 0;
 }

@@ -6,22 +6,44 @@
 #include <cstdlib>
 #include <algorithm>
 #include <map>
+#include <cctype>
 using namespace std; 
+
+bool is_numeric(const std::string& s) {
+    return !s.empty() && std::all_of(s.begin(), s.end(), [](unsigned char c) {
+        return std::isdigit(c);
+    });
+}
 
 int main(){
     map<string,string> file_obj;
-    bool file=true;
-    string i,name;
+    bool file=false,struc=false;
+    string i,name="",final,k;
     ifstream ipf("structure.txt");
     while(getline(ipf,i)){
-        if(file){
-            name=i;
-            file_obj[i]="";
-            file=false;
+        if(!struc){
+            if(i=="struct:"){
+                struc=true;
+            }
+            continue;
         }
-        else{
-            file_obj[name]=i;
+        if(is_numeric(i)){
             file=true;
+            final="python load.py GFN \"" + i + "\"";
+            system(final.c_str());
+            ifstream inpFile("temp.txt");
+            getline(inpFile,k);
+            for(char j:k){
+                name+=j;
+                if(j=='/'){
+                    name="";
+                    continue;
+                }
+            }
+        }
+        if(file){
+            file_obj[name]=i;
+            file=false;
         }
     }
     cout << "Enter commit message: \n"; 
@@ -38,6 +60,7 @@ int main(){
     if (n == "."){ 
         for (auto pair:file_obj){ 
             string obj = pair.second;
+            final="python load.py CC \"" + obj + "\"";
             ifstream file(obj); 
             string filecontent; 
             if (!file.is_open()){ 
@@ -50,6 +73,7 @@ int main(){
                 filecontent = buffer.str(); 
                 file.close(); 
             }
+
             ofstream temp("tempcontent.txt");
             temp << filecontent;
             temp.close(); 
