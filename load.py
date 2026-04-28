@@ -296,12 +296,23 @@ def check_conflict(fileno):
         cursor.execute("select count(*) from pushes where fileno=%s and merge=false;",(fileno,))
         output=cursor.fetchall()
         num=output[0][0]
-        cursor.close()
-        conn.close()
         if num>=2:
+            cursor.execute("select file_content from pushes where fileno=%s and merge=false;",(fileno,))
+            output=cursor.fetchall()
+            filename="not_merged/file1"
+            with open(filename,"w+") as f:
+                f.write(output[0][0])
+            filename="not_merged/file2"
+            with open(filename,"w+") as f:
+                f.write(output[0][1])
+            cursor.close()
+            conn.close()
             return 1
         else:
+            cursor.close()
+            conn.close()
             return 0
+            
         
 
     except Exception as e:
