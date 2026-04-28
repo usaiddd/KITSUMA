@@ -29,7 +29,16 @@ int main(){
     vector<string> files,filepath;
     int index=0;
     user *u;
-    string base="C:/testing";
+    ifstream getname("conname.txt"); 
+    string coname; 
+    getline(getname, coname); 
+    getname.close(); 
+    string base = "C:/" + coname;
+    string delCmd = "del /q /s /f \"C:\\" + coname + "\\*\" 2>nul";
+    string rmdirCmd = "for /d %i in (\"C:\\" + coname + "\\*\") do rmdir /s /q \"%i\" 2>nul";
+    system(delCmd.c_str());
+    system(rmdirCmd.c_str());
+    remove("conname.txt"); 
     ifstream inputFile("structure.txt");
     if (!inputFile.is_open()) {
         std::cerr << "Error opening file: structure.txt" << std::endl;

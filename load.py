@@ -191,14 +191,15 @@ def save_hierarchy(conname):
             port="5432"
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT container_no, login FROM container WHERE container_name = %s;", (conname,))
+        cursor.execute("SELECT container_no, login FROM container WHERE container_name = %s ORDER BY container_no DESC LIMIT 1;", (conname,))
         container_result = cursor.fetchone()
         if not container_result:
             conn.close()
             return 1
         container_no = container_result[0]
-        admin_login = container_result[1]
+        admin_login = container_result[1] 
         paths = []
+        paths2 = {}
         user_roots = {}
         user_auth = {}
         with open("hierarchy_data.txt", "r") as f:
@@ -207,7 +208,23 @@ def save_hierarchy(conname):
                 if len(parts) < 2: continue
                 record_type = parts[0]
                 if record_type == "PATH":
-                    paths.append(parts[1])
+                    path_str = parts[1]
+                    paths.append(path_str)
+                    filename_only = path_str.split('/')[-1]
+                    if '.' in filename_only:
+                        cursor.execute("SELECT fileno FROM file WHERE filename = %s;", (path_str,))
+                        file_result = cursor.fetchone()
+                        if not file_result:
+                            cursor.execute("INSERT INTO file (filename, file_content) VALUES (%s, '') RETURNING fileno;", (path_str,))
+                            fileno = cursor.fetchone()[0]
+                        else:
+                            fileno = file_result[0]
+                        cursor.execute("SELECT 1 FROM containertofile WHERE containerno = %s AND fileno = %s;", (container_no, fileno))
+                        if not cursor.fetchone():
+                            cursor.execute("INSERT INTO containertofile (containerno, fileno) VALUES (%s, %s);", (container_no, fileno))
+                        paths2[path_str] = str(fileno) 
+                    else: 
+                        paths2[path_str] = path_str
                 elif record_type == "EMP":
                     folder, login = parts[1], parts[2]
                     if login not in user_roots:
@@ -225,25 +242,26 @@ def save_hierarchy(conname):
                     folder, login, rank = parts[1], parts[2], parts[3]
                     cursor.execute("INSERT INTO folder_hierarchy (container_no, folder_path, user_login, rank) VALUES (%s, %s, %s, %s);", 
                                    (container_no, folder, login, int(rank)))
-        admin_struct = f"{conname}\nauth:\nA\nstruct:\n" + "\n".join(paths)
+        admin_paths = [paths2[p] for p in paths]
+        admin_struct = f"{conname}\nauth:\nA\nstruct:\n" + "\n".join(admin_paths)
         cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (admin_login, admin_struct))
         for login, roots in user_roots.items():
-            allowed_paths = []
+            allowed_paths = []    
             for p in paths:
                 for r in roots:
                     if p == r or p.startswith(r + "/"):
-                        allowed_paths.append(p)
+                        allowed_paths.append(paths2[p])
                         break
             auth_level = user_auth.get(login, "E")
             struct_text = f"{conname}\nauth:\n{auth_level}\nstruct:\n" + "\n".join(allowed_paths)
-            cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (login, struct_text))             
+            cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (login, struct_text))           
         conn.commit()
         conn.close()
         return 0
     except Exception as e:
         print(f"Error: {e}") 
         return 2
-    
+        
 def getname(fileno):
     try:
         conn = psycopg2.connect(
