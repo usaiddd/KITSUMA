@@ -1,0 +1,4 @@
+import sys
+def calculate():
+    return 10 + 20
+print(y)

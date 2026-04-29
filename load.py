@@ -110,7 +110,7 @@ def getdata(login_id):
             return 1
     except Exception as e:
         return 2
-def putfilecontent(filename, file):
+def putfilecontent(fileno, filename, file):
     try:
         with open(file, "r") as f:
             filecontent = f.read()
@@ -122,17 +122,39 @@ def putfilecontent(filename, file):
             port="5432"
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT filename from file where filename = %s;", (filename, ))
+        cursor.execute("SELECT fileno from file where fileno = %s;", (fileno, ))
         output = cursor.fetchall()
         if (output): 
-            cursor.execute("UPDATE file set file_content = %s where filename = %s;", (filecontent, filename))
+            cursor.execute("UPDATE file set file_content = %s where fileno = %s;", (filecontent, fileno))
         else: 
             cursor.execute("Insert into file (filename, file_content) values (%s, %s);", (filename, filecontent))
         conn.commit()
         conn.close() 
     except Exception as e: 
         return 2    
-def getfiledata(file_path,base_path,file_name): 
+def getfiledata2(filename, fileno): 
+    try:
+        conn = psycopg2.connect(
+            host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
+            database="kitsumadb_wzpd",
+            user="admin1",
+            password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
+            port="5432"
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT file_content from file where filename = %s and fileno = %s; ", (filename, fileno))
+        output = cursor.fetchall()
+        if (output): 
+            with open("not_merged/main.txt", 'w+') as f: 
+                f.write(output[0][0])
+            conn.close()
+            return 0
+        else:
+            conn.close()
+            return 1
+    except Exception as e:
+        return 2
+def getfiledata(file_path,base_path, filename): 
     try:
         conn = psycopg2.connect(
             host="dpg-d7hp1l57vvec73a3nt3g-a.oregon-postgres.render.com",
@@ -165,20 +187,20 @@ def pushes(filename, file, message, user_login):
             user="admin1",
             password="k4K6z2M5BMdqR76oIZ8eOH4rSVuQDksr",
             port="5432"
-        )   
+        )
         cursor = conn.cursor()
         cursor.execute("SELECT fileno from file where filename = %s;", (filename, ))
         output = cursor.fetchall()
-        
         if (output): 
             cursor.execute("INSERT INTO pushes (fileno, file_content, message, user_login) values (%s, %s, %s, %s); ", (output[0][0], filecontent, message, user_login))
-            conn.commit() 
+            conn.commit()
             conn.close() 
             return 0;
         else:
             conn.close()
             return 1
     except Exception as e:
+        print(f"Error: {e}") 
         return 2
     
 def save_hierarchy(conname):
@@ -192,13 +214,16 @@ def save_hierarchy(conname):
         )
         cursor = conn.cursor()
         cursor.execute("SELECT container_no, login FROM container WHERE container_name = %s ORDER BY container_no DESC LIMIT 1;", (conname,))
+        cursor.execute("SELECT container_no, login FROM container WHERE container_name = %s ORDER BY container_no DESC LIMIT 1;", (conname,))
         container_result = cursor.fetchone()
         if not container_result:
             conn.close()
             return 1
         container_no = container_result[0]
         admin_login = container_result[1] 
+        admin_login = container_result[1] 
         paths = []
+        paths2 = {}
         paths2 = {}
         user_roots = {}
         user_auth = {}
@@ -208,6 +233,23 @@ def save_hierarchy(conname):
                 if len(parts) < 2: continue
                 record_type = parts[0]
                 if record_type == "PATH":
+                    path_str = parts[1]
+                    paths.append(path_str)
+                    filename_only = path_str.split('/')[-1]
+                    if '.' in filename_only:
+                        cursor.execute("SELECT fileno FROM file WHERE filename = %s;", (path_str,))
+                        file_result = cursor.fetchone()
+                        if not file_result:
+                            cursor.execute("INSERT INTO file (filename, file_content) VALUES (%s, '') RETURNING fileno;", (path_str,))
+                            fileno = cursor.fetchone()[0]
+                        else:
+                            fileno = file_result[0]
+                        cursor.execute("SELECT 1 FROM containertofile WHERE containerno = %s AND fileno = %s;", (container_no, fileno))
+                        if not cursor.fetchone():
+                            cursor.execute("INSERT INTO containertofile (containerno, fileno) VALUES (%s, %s);", (container_no, fileno))
+                        paths2[path_str] = str(fileno) 
+                    else: 
+                        paths2[path_str] = path_str
                     path_str = parts[1]
                     paths.append(path_str)
                     filename_only = path_str.split('/')[-1]
@@ -244,16 +286,21 @@ def save_hierarchy(conname):
                                    (container_no, folder, login, int(rank)))
         admin_paths = [paths2[p] for p in paths]
         admin_struct = f"{conname}\nauth:\nA\nstruct:\n" + "\n".join(admin_paths)
+        admin_paths = [paths2[p] for p in paths]
+        admin_struct = f"{conname}\nauth:\nA\nstruct:\n" + "\n".join(admin_paths)
         cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (admin_login, admin_struct))
         for login, roots in user_roots.items():
+            allowed_paths = []    
             allowed_paths = []    
             for p in paths:
                 for r in roots:
                     if p == r or p.startswith(r + "/"):
                         allowed_paths.append(paths2[p])
+                        allowed_paths.append(paths2[p])
                         break
             auth_level = user_auth.get(login, "E")
             struct_text = f"{conname}\nauth:\n{auth_level}\nstruct:\n" + "\n".join(allowed_paths)
+            cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (login, struct_text))           
             cursor.execute("INSERT INTO personalized_files (user_login, structure) VALUES (%s, %s);", (login, struct_text))           
         conn.commit()
         conn.close()
@@ -293,18 +340,21 @@ def check_conflict(fileno):
             port="5432"
         )
         cursor=conn.cursor()
-        cursor.execute("select count(*) from pushes where fileno=%s and merge=false;",(fileno,))
+        cursor.execute("select count(*) from pushes where fileno=%s and merged=false;",(fileno,))
         output=cursor.fetchall()
         num=output[0][0]
+        print(num)
         if num>=2:
-            cursor.execute("select file_content from pushes where fileno=%s and merge=false;",(fileno,))
+            cursor.execute("select file_content from pushes where fileno=%s and merged=false;",(fileno,))
             output=cursor.fetchall()
-            filename="not_merged/file1"
+            filename="not_merged/file1.txt"
             with open(filename,"w+") as f:
                 f.write(output[0][0])
-            filename="not_merged/file2"
+            filename="not_merged/file2.txt"
             with open(filename,"w+") as f:
                 f.write(output[0][1])
+            filename="not_merged/main.txt"
+            cursor.execute("UPDATE pushes set merged = true where fileno = %s and merged = false; ", (fileno, ))
             cursor.close()
             conn.close()
             return 1
@@ -312,14 +362,12 @@ def check_conflict(fileno):
             cursor.close()
             conn.close()
             return 0
-            
         
-
     except Exception as e:
         print(f"Error: {e}") 
         return 2
 
-
+    
 if __name__ == "__main__":
     operation = sys.argv[1]
 
@@ -344,16 +392,22 @@ if __name__ == "__main__":
         user = sys.argv[2]
         code = getdata(user)
 
-    elif operation == "A": 
-        filename = sys.argv[2]
-        file = sys.argv[3]
-        code = putfilecontent(filename, file)
+    elif operation == "A":
+        fileno = sys.argv[2] 
+        filename = sys.argv[3]
+        file = sys.argv[4]
+        code = putfilecontent(fileno,filename, file)
         
     elif operation == "GF":
         file_path=sys.argv[2]
         base_path=sys.argv[3]
         file_name=sys.argv[4]
         code = getfiledata(file_path,base_path,file_name)
+
+    elif operation == "GF2":
+        filename=sys.argv[2]
+        fileno=sys.argv[3]
+        code = getfiledata2(filename,fileno)
 
     elif operation == "PU": 
         filename = sys.argv[2]

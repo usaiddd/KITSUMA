@@ -16,7 +16,7 @@ bool is_numeric(const std::string& s) {
 }
 
 int main(){
-    map<string,string> file_obj;
+    map<string,string> file_obj; //FILENAME, FILENO
     bool file=false,struc=false;
     string i,name="",final,k;
     ifstream ipf("structure.txt");
@@ -60,43 +60,63 @@ int main(){
     if (n == "."){ 
         for (auto pair:file_obj){ 
             string obj = pair.second;
+            string obj2; 
+            cout << obj ;
             final="python load.py CC \"" + obj + "\"";
-            int code=system(final.c_str());
-            if(code==1){
-                cout<<"conflicts hai chacha";
+            int code = system(final.c_str());  
+            if (code == 1){ 
+                cout << "You cannot push at this time. Previous conflicts have to be merged before new pushes are allowed. "; 
+                string final2="python load.py GFN "+ obj;
+                system(final2.c_str());
+                ifstream inpFile("temp.txt");
+                getline(inpFile,obj2);
+                string final3 = "python load.py GF2 \"" + obj2 + "\" \"" + obj + "\"";
+                system(final3.c_str());
+                system("g++ update.cpp -o update && .\\update");
+                cout << obj; 
+                string command = "python load.py A \"" + obj + "\" \"" + "merged.txt" + "\"";
+                system(command.c_str());
             }
-            final="python load.py GFN \"" + obj + "\"";
-            system(final.c_str());
-            ifstream inpFile("temp.txt");
-            getline(inpFile,obj);
-            ifstream file(obj); 
-            string filecontent; 
-            if (!file.is_open()){ 
-                cout << "Failed to open file. "; 
-                filecontent = "";  
-            } 
+            else if (code == 2){ 
+                cout << "Unknown error occurred. "; 
+            }
             else{
-                stringstream buffer; 
-                buffer << file.rdbuf(); 
-                filecontent = buffer.str(); 
-                file.close(); 
+                string obj3 = "C:/MusicPlayer/"; 
+                final="python load.py GFN" + obj;
+                system(final.c_str());
+                ifstream inpFile("temp.txt");
+                getline(inpFile,obj);
+                obj3 = obj3 + obj; 
+                ifstream file(obj3); 
+                string filecontent; 
+                if (!file.is_open()){ 
+                    cout << "Failed to open file. "; 
+                    filecontent = "";  
+                } 
+                else{
+                    stringstream buffer; 
+                    buffer << file.rdbuf(); 
+                    filecontent = buffer.str(); 
+                    file.close(); 
+                }
+                ofstream temp("tempcontent.txt");
+                temp << filecontent;
+                temp.close(); 
+                cout << pair.first; 
+                string command = "python load.py A \"" + obj + "\" \"" + pair.second + "\" \"" + "tempcontent.txt" + "\"";
+                system(command.c_str());
+                
+                ifstream login("LoggedIn.txt"); 
+                string username; 
+                if (login.is_open()) {
+                    getline(login, username);
+                    login.close();
+                } else {
+                    cout << "Failed to open the file." << std::endl;
+                } 
+                command = "python load.py PU \"" + pair.first + "\" \"" + "tempcontent.txt" + "\" \"" + msg + "\" \"" + username + "\"";
+                system(command.c_str());
             }
-
-            ofstream temp("tempcontent.txt");
-            temp << filecontent;
-            temp.close(); 
-            string command = "python load.py A \"" + pair.first + "\" tempcontent.txt";
-            system(command.c_str());
-            ifstream login("LoggedIn.txt"); 
-            string username; 
-            if (login.is_open()) {
-                getline(login, username);
-                login.close();
-            } else {
-                cout << "Failed to open the file." << std::endl;
-            } 
-            command = "python load.py PU\"" + pair.first + "\" \"" + "tempcontent.txt" + "\" \"" + msg + "\" \"" + username + "\"";
-            system(command.c_str());
         }
     }
     else{
@@ -131,9 +151,6 @@ int main(){
             ofstream temp("tempcontent.txt");
             temp << filecontent;
             temp.close();
-            string command = "python load.py A \"" + filename + "\" tempcontent.txt";
-            system(command.c_str());
-            
         }
     }
     return 0; 
