@@ -97,7 +97,7 @@ psql -U postgres -f kitsumadb.sql
 # Edit the connection string at the top of load.py
 
 # 4. Compile the C++ files
-g++ run.cpp -o run
+g++ define.cpp -o run
 g++ add.cpp -o add
 g++ update.cpp -o update
 
